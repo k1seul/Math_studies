@@ -14,3 +14,11 @@ Lebl, Jiří. Basic Analysis I: Introduction to Real Analysis, Volume 1. CreateS
 
 Doing:
   [Assignment](https://ocw.mit.edu/courses/18-100a-real-analysis-fall-2020/pages/assignments-and-exams/)
+
+### Additional Reasources for Self Study:
+* [Understanding Analysis](https://link.springer.com/book/10.1007/978-1-4939-2712-8) by Stephen Abbott
+* [Analysis I](https://link.springer.com/book/10.1007/978-981-19-7261-4) by Terence Tao
+* [Analysis II](https://link.springer.com/book/10.1007/978-981-19-7284-3) by Terence Tao
+* [Micheal Penn Analysis youtube playlist](https://www.youtube.com/playlist?list=PL22w63XsKjqxqaF-Q7MSyeSG1W1_xaQoS)
+
+***Happy Learning! 😆***
