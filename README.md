@@ -21,4 +21,4 @@ Doing:
 * [Analysis II](https://link.springer.com/book/10.1007/978-981-19-7284-3) by Terence Tao
 * [Micheal Penn Analysis youtube playlist](https://www.youtube.com/playlist?list=PL22w63XsKjqxqaF-Q7MSyeSG1W1_xaQoS)
 
-***Happy Learning! 😆***
+***Happy Learning!*** 😆
