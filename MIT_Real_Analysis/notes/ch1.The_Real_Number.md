@@ -142,9 +142,8 @@ Suppose $x,y \in \mathbb{R}$ and $x < y$. Prove there exists $i \in \mathbb{R} \
 **Proof**
 Proof by Contradiction:
 Let
-$$
- x, y \in \mathbb{R} \text{ and } x < y, \text{ there is no irrational between } x, y \tag{a}   
-$$
+$$x, y \in \mathbb{R} \text{ and } x < y, \text{ there is no irrational between } x, y \tag{a}$$
+
 $$x - \sqrt{2} \in \mathbb{R}, \quad y - \sqrt{2} \in \mathbb{R}$$
 $$\text{Since } \exists r \in \mathbb{Q} \text{ such that } x - \sqrt{2} < r < y - \sqrt{2}$$
 $$x < r + \sqrt{2} < y$$
