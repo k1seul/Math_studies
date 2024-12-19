@@ -1,4 +1,5 @@
 # Linear Algebra assignment for [Abstract Linear Algebra for Machine Learning(Quantum Formalism)](https://quantumformalism.com/abstract-linear-algebra-for-ml)
+## Instructor 
 Lecture given by [Rakvi S. Ph.D](https://raakvi.wixsite.com/rakvi)
 ## Algebra, Topology, Differential Calculus and Optimization for computer Science and Machine Learning [Textbook Link](https://www.cis.upenn.edu/~jean/math-deep.pdf)
 2000 page math book. 😇
