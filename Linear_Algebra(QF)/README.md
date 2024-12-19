@@ -31,10 +31,10 @@ Real-World Use Cases: Analyze case studies and participate in projects that demo
   - Understood the ring axioms and explored examples such as integers modulo \(n\).  
   - Reviewed field properties, focusing on finite fields and their applications.
  
-- **Summary** (generated with gpt) 
-# Groups, Rings, and Fields
+### **Summary** (generated with gpt) 
+### Groups, Rings, and Fields
 
-## Group
+### Group
 A **group** is a set \( G \) equipped with a binary operation \( \cdot \) that satisfies the following properties:
 1. **Closure**: For all \( a, b \in G \), \( a \cdot b \in G \).
    \[
@@ -60,9 +60,7 @@ a \cdot b = b \cdot a \quad \forall a, b \in G,
 \]
 the group is called an **abelian group**.
 
----
-
-## Ring
+### Ring
 A **ring** is a set \( R \) equipped with two binary operations, usually called addition \( + \) and multiplication \( \cdot \), such that:
 1. \( (R, +) \) is an abelian group (with additive identity \( 0 \)).
    \[
@@ -83,9 +81,7 @@ If \( R \) also satisfies:
 
 then \( R \) is called a **commutative ring with identity**.
 
----
-
-## Field
+### Field
 A **field** is a commutative ring \( F \) with identity \( 1 \neq 0 \), such that every nonzero element \( a \in F \) has a multiplicative inverse \( a^{-1} \in F \), satisfying
 \[
 a \cdot a^{-1} = 1
