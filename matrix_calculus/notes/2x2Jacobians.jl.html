@@ -1,0 +1,652 @@
+<!-- PlutoStaticHTML.Begin -->
+<!--
+    # This information is used for caching.
+    [PlutoStaticHTML.State]
+    input_sha = "e35c8eaafebb94506be8bf8a95d4cc6bbf5880babc3722945e3b436c1fd2fd4b"
+    julia_version = "1.8.3"
+-->
+
+<div class="markdown"><h1>Two by Two Matrix Jacobians</h1></div>
+
+
+<div class="markdown"><p>This notebook emphasizes the multiple views of Jacobians with  examples of 2x2 matrix functions.</p><p>In particular we will see the</p><ul><li><p>Symbolic "vec" format producing 4x4 matrices (generally n² by n² or mn by mn)</p></li><li><p>Numerical formats</p></li><li><p>The important Linear Transformation view</p></li><li><p>Kronecker notation</p></li><li><p>An example using ForwardDiff automatic differentiation</p></li></ul><p>We also emphasize that  matrix factorizations are also matrix functions, just as much as the square and the cube.</p></div>
+
+<pre class='language-julia'><code class='language-julia'>using Symbolics, LinearAlgebra, PlutoUI</code></pre>
+
+
+<pre class='language-julia'><code class='language-julia'>TableOfContents(title="Two by Two Matrix Jacobians", indent=true,aside=true)</code></pre>
+
+
+
+<div class="markdown"><h1>Symbolic Matrices</h1></div>
+
+<pre class='language-julia'><code class='language-julia'>@variables p,q,r,s,θ</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{c}
+p \\
+q \\
+r \\
+s \\
+\theta \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>X = [p r;q s]</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cc}
+p &amp; r \\
+q &amp; s \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><h2>vec</h2><p>The <code>vec</code> command in Julia and in standard mathematics flattens a matrix column by column.</p></div>
+
+<pre class='language-julia'><code class='language-julia'>vec(X)</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{c}
+p \\
+q \\
+r \\
+s \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><h1>1) The matrix square function</h1></div>
+
+<pre class='language-julia'><code class='language-julia'>X^2</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cc}
+p^{2} + q r &amp; p r + r s \\
+p q + q s &amp; q r + s^{2} \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>vec(X^2)</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{c}
+p^{2} + q r \\
+p q + q s \\
+p r + r s \\
+q r + s^{2} \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><h2>Symbolic Jacobian</h2><p>The Jacobian of the (flattened) matrix function X² symbolically</p></div>
+
+<pre class='language-julia'><code class='language-julia'>jac(Y,X) =  Symbolics.jacobian(vec(Y),vec(X))</code></pre>
+<pre class="code-output documenter-example-output" id="var-jac">jac (generic function with 1 method)</pre>
+
+<pre class='language-julia'><code class='language-julia'>J = jac(X^2, X)</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+2 p &amp; r &amp; q &amp; 0 \\
+q &amp; p + s &amp; 0 &amp; q \\
+r &amp; 0 &amp; p + s &amp; r \\
+0 &amp; r &amp; q &amp; 2 s \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><h2>Numerical Jacobian</h2></div>
+
+<pre class='language-julia'><code class='language-julia'>begin
+  M = [1 2;3 4]
+  E = [.0003 .0003;.0002 .0001]
+  substitute(J,Dict(p=&gt;1,q=&gt;3,r=&gt;2,s=&gt;4))
+end</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+2 &amp; 2 &amp; 3 &amp; 0 \\
+3 &amp; 5 &amp; 0 &amp; 3 \\
+2 &amp; 0 &amp; 5 &amp; 2 \\
+0 &amp; 2 &amp; 3 &amp; 8 \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>substitute(J,Dict(p=&gt;1,q=&gt;3,r=&gt;2,s=&gt;4)) * vec(E)</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{c}
+0.0019 \\
+0.0022 \\
+0.0023 \\
+0.0021 \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>(M+E)^2 - M^2</code></pre>
+<pre class="code-output documenter-example-output" id="var-hash103375">2×2 Matrix{Float64}:
+ 0.00190015  0.00230012
+ 0.00220008  0.00210007</pre>
+
+
+<div class="markdown"><h2>Linear Transformation Jacobian</h2><p>Notice: there is no flattening; this is just matrix to matrix.</p></div>
+
+<pre class='language-julia'><code class='language-julia'>linear_transformation(E) = M*E + E*M</code></pre>
+<pre class="code-output documenter-example-output" id="var-linear_transformation">linear_transformation (generic function with 1 method)</pre>
+
+<pre class='language-julia'><code class='language-julia'>linear_transformation(E)</code></pre>
+<pre class="code-output documenter-example-output" id="var-hash105118">2×2 Matrix{Float64}:
+ 0.0019  0.0023
+ 0.0022  0.0021</pre>
+
+
+<div class="markdown"><h2>Kronecker product or ⊗ notation</h2><p>Notation that kind of lets you think "flattened" or "not flattened" at the same time</p></div>
+
+<pre class='language-julia'><code class='language-julia'>@variables a,b,c,d</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{c}
+a \\
+b \\
+c \\
+d \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>[p r;q s],[a c;b d]</code></pre>
+<pre class="code-output documenter-example-output" id="var-hash111734">(Symbolics.Num[p r; q s], Symbolics.Num[a c; b d])</pre>
+
+
+<div class="markdown"><p>Notice all possible products with the first matrix and the second</p></div>
+
+<pre class='language-julia'><code class='language-julia'>kron([a;b],[p q;r s])</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cc}
+a p &amp; a q \\
+a r &amp; a s \\
+b p &amp; b q \\
+b r &amp; b s \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>kron([a c;b d],[p q;r s] )</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+a p &amp; a q &amp; c p &amp; c q \\
+a r &amp; a s &amp; c r &amp; c s \\
+b p &amp; b q &amp; d p &amp; d q \\
+b r &amp; b s &amp; d r &amp; d s \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>@variables e f g h  🍕 👽 🐼 😸</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{c}
+e \\
+f \\
+g \\
+h \\
+🍕 \\
+👽 \\
+🐼 \\
+😸 \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>kron([a b c;d e f],[🍕 👽; 🐼 😸])</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccccc}
+a 🍕 &amp; a 👽 &amp; b 🍕 &amp; b 👽 &amp; c 🍕 &amp; c 👽 \\
+a 🐼 &amp; a 😸 &amp; b 🐼 &amp; b 😸 &amp; c 🐼 &amp; c 😸 \\
+d 🍕 &amp; d 👽 &amp; e 🍕 &amp; e 👽 &amp; f 🍕 &amp; f 👽 \\
+d 🐼 &amp; d 😸 &amp; e 🐼 &amp; e 😸 &amp; f 🐼 &amp; f 😸 \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>kron([🍕 👽; 🐼 😸],I2)</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+🍕 &amp; 0 &amp; 👽 &amp; 0 \\
+0 &amp; 🍕 &amp; 0 &amp; 👽 \\
+🐼 &amp; 0 &amp; 😸 &amp; 0 \\
+0 &amp; 🐼 &amp; 0 &amp; 😸 \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>kron(I2,[🍕 👽; 🐼 😸])</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+🍕 &amp; 👽 &amp; 0 &amp; 0 \\
+🐼 &amp; 😸 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; 🍕 &amp; 👽 \\
+0 &amp; 0 &amp; 🐼 &amp; 😸 \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>kron(I2,X)</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+p &amp; r &amp; 0 &amp; 0 \\
+q &amp; s &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; p &amp; r \\
+0 &amp; 0 &amp; q &amp; s \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>kron(X',I2)</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+p &amp; 0 &amp; q &amp; 0 \\
+0 &amp; p &amp; 0 &amp; q \\
+r &amp; 0 &amp; s &amp; 0 \\
+0 &amp; r &amp; 0 &amp; s \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><p>It is very reasonable to express the Jacobian of the matrix square function as <br/><span class="tex">$I_2 \otimes X + X^T \otimes I_2$</span></p></div>
+
+<pre class='language-julia'><code class='language-julia'>begin
+    I2 = [1 0; 0 1]
+    kron(I2,X) + kron(X',I2) , J
+end</code></pre>
+<pre class="code-output documenter-example-output" id="var-I2">(Symbolics.Num[2p r q 0; q p + s 0 q; r 0 p + s r; 0 r q 2s], Symbolics.Num[2p r q 0; q p + s 0 q; r 0 p + s r; 0 r q 2s])</pre>
+
+
+<div class="markdown"><h3>Key Kronecker identity</h3><p>(A ⊗ B) * vec(C) =  vec(BCAᵀ)</p></div>
+
+<pre class='language-julia'><code class='language-julia'>begin
+    A = rand(5,7)
+    B = rand(4,3)
+    C = rand(3,7)
+    kron(A,B) * vec(C) ≈ vec(B*C*A')
+end</code></pre>
+<pre class="code-output documenter-example-output" id="var-A">true</pre>
+
+<pre class='language-julia'><code class='language-julia'>kron( rand(5,5) , rand(5,5) )</code></pre>
+<pre class="code-output documenter-example-output" id="var-hash600603">25×25 Matrix{Float64}:
+ 0.271174  0.223576   0.236582    0.275765   …  0.408474   0.476126   0.170542
+ 0.20425   0.170656   0.279055    0.188892      0.481805   0.326135   0.663174
+ 0.202626  0.061567   0.194176    0.225057      0.335258   0.388575   0.358673
+ 0.296568  0.169552   0.27558     0.38414       0.475807   0.663242   0.532824
+ 0.199882  0.134227   0.0672906   0.0168441     0.116181   0.0290824  0.564996
+ 0.17768   0.146492   0.155014    0.180688   …  0.161752   0.188542   0.0675331
+ 0.13383   0.111818   0.182843    0.123767      0.190791   0.129147   0.262611
+ ⋮                                           ⋱                        
+ 0.022874  0.0153606  0.00770058  0.0019276     0.11129    0.0278579  0.541208
+ 0.451492  0.372243   0.393899    0.459137   …  0.164129   0.191313   0.0685255
+ 0.340067  0.284135   0.464613    0.314497      0.193594   0.131044   0.26647
+ 0.337364  0.102506   0.323295    0.37471       0.13471    0.156134   0.144119
+ 0.493772  0.282296   0.458829    0.639576      0.191184   0.266498   0.214094
+ 0.332794  0.223482   0.112036    0.0280446     0.0466829  0.0116856  0.227021</pre>
+
+
+<div class="markdown"><p>Useful Krockecker identities</p><ul><li><p class="tex">$$(A\otimes B)^T=A^T\otimes B^T$$</p></li><li><p class="tex">$$(A\otimes B)^{-1}=A^{-1}\otimes B^{-1}$$</p></li><li><p class="tex">$$\det(A\otimes B)=\det(A)^m\det(B)^n$$</p><p>, <span class="tex">$A\in\Re^{n,n}, B\in\Re^{m,m}$</span></p></li><li><p class="tex">$$trace(A\otimes B)=trace(A)trace(B)$$</p></li><li><p class="tex">$$A\otimes B$$</p><p>is orthogonal if <span class="tex">$A$</span> and <span class="tex">$B$</span> are orthogonal</p></li><li><p class="tex">$$(A \otimes B)(C \otimes D)=(AC) \otimes (BD)$$</p></li><li><p>If <span class="tex">$Au = \lambda u$</span>, and <span class="tex">$Bv=\mu v$</span>, then if <span class="tex">$X=vu^T$</span>, then <span class="tex">$BXA^T =\lambda \mu X$</span>, and also <span class="tex">$AX^T B^T = \lambda \mu X^T$</span>.  Therefore <span class="tex">$A \otimes B$</span> and <span class="tex">$B \otimes A$</span> have the same eigenvalues, and transposed eigenvectors.</p></li></ul><p>(See <a href="https://en.wikipedia.org/wiki/Kronecker_product#Properties">Wikipedia</a> for more properties. )</p></div>
+
+
+<div class="markdown"><h2>The Jacobian in Kronecker notation</h2></div>
+
+
+<div class="markdown"><p>You see (I⊗X + X'⊗I) vec(dX) = vec(XdX + dX X) = vec( d(X²))  <br/> showing that d(X²) = (I⊗X + X'⊗I) dX.</p><p>(I feel it's okay to drop the "vec" and think of the kronecker notation as defining the linear operator from matrices to matrices)</p><p>Do look this over. <br/></p></div>
+
+
+<div class="markdown"><h2>Automatic Differentiation (is not finite differences nor symbolic)</h2><p>It comes in forward and reverse modes. Let's try forward.</p></div>
+
+<pre class='language-julia'><code class='language-julia'>using ForwardDiff</code></pre>
+
+
+<pre class='language-julia'><code class='language-julia'>J</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+2 p &amp; r &amp; q &amp; 0 \\
+q &amp; p + s &amp; 0 &amp; q \\
+r &amp; 0 &amp; p + s &amp; r \\
+0 &amp; r &amp; q &amp; 2 s \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>ForwardDiff.jacobian(X-&gt;X^2,M)</code></pre>
+<pre class="code-output documenter-example-output" id="var-anon18015527475930884642">4×4 Matrix{Int64}:
+ 2  2  3  0
+ 3  5  0  3
+ 2  0  5  2
+ 0  2  3  8</pre>
+
+<pre class='language-julia'><code class='language-julia'>#Check
+substitute(J, Dict(X.=&gt;[1 3;2 4] ))</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+2 &amp; 3 &amp; 2 &amp; 0 \\
+2 &amp; 5 &amp; 0 &amp; 2 \\
+3 &amp; 0 &amp; 5 &amp; 3 \\
+0 &amp; 3 &amp; 2 &amp; 8 \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>ForwardDiff.jacobian(X-&gt;X^2,X)</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+2 p &amp; r &amp; q &amp; 0 \\
+q &amp; p + s &amp; 0 &amp; q \\
+r &amp; 0 &amp; p + s &amp; r \\
+0 &amp; r &amp; q &amp; 2 s \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><h1>2) The matrix cube Function</h1></div>
+
+<pre class='language-julia'><code class='language-julia'>expand.(X^3)</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cc}
+p^{3} + q r s + 2 p q r &amp; p^{2} r + r^{2} q + s^{2} r + p r s \\
+p^{2} q + s^{2} q + q^{2} r + p q s &amp; s^{3} + p q r + 2 q r s \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><h2>Symbolic Jacobian</h2><p>The Jacobian of the (flattened) matrix function X² symbolically</p></div>
+
+<pre class='language-julia'><code class='language-julia'>expand.(jac(X^3, X))</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+3 p^{2} + 2 q r &amp; r s + 2 p r &amp; q s + 2 p q &amp; q r \\
+q s + 2 p q &amp; p^{2} + p s + s^{2} + 2 q r &amp; q^{2} &amp; p q + 2 q s \\
+r s + 2 p r &amp; r^{2} &amp; p^{2} + p s + s^{2} + 2 q r &amp; p r + 2 r s \\
+q r &amp; p r + 2 r s &amp; p q + 2 q s &amp; 3 s^{2} + 2 q r \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>expand.(ForwardDiff.jacobian(X-&gt;X^3,X))</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+3 p^{2} + 2 q r &amp; r s + 2 p r &amp; q s + 2 p q &amp; q r \\
+q s + 2 p q &amp; p^{2} + p s + s^{2} + 2 q r &amp; q^{2} &amp; p q + 2 q s \\
+r s + 2 p r &amp; r^{2} &amp; p^{2} + p s + s^{2} + 2 q r &amp; p r + 2 r s \\
+q r &amp; p r + 2 r s &amp; p q + 2 q s &amp; 3 s^{2} + 2 q r \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><h2>LinearTransformation Jacobian</h2></div>
+
+
+<div class="markdown"><p>dX X² + X dX X + dX X²</p></div>
+
+
+<div class="markdown"><p>with numerical data:</p></div>
+
+<pre class='language-julia'><code class='language-julia'>E -&gt; E*M*M + M*E*M + M*M*E</code></pre>
+<pre class="code-output documenter-example-output" id="var-anon17829304737812854759">#7 (generic function with 1 method)</pre>
+
+<pre class='language-julia'><code class='language-julia'>(E+M)^3 - M^3</code></pre>
+<pre class="code-output documenter-example-output" id="var-hash545143">2×2 Matrix{Float64}:
+ 0.0129015  0.0161016
+ 0.0174014  0.0195013</pre>
+
+<pre class='language-julia'><code class='language-julia'>(E -&gt; E*M*M + M*E*M + M*M*E)(E)</code></pre>
+<pre class="code-output documenter-example-output" id="var-anon3428381646589604882">2×2 Matrix{Float64}:
+ 0.0129  0.0161
+ 0.0174  0.0195</pre>
+
+
+<div class="markdown"><p>check against the symbolic answer</p></div>
+
+<pre class='language-julia'><code class='language-julia'>substitute( Symbolics.jacobian(vec(X^3), vec(X)) , Dict(p=&gt;M[1,1],q=&gt;M[2,1],r=&gt;M[1,2],s=&gt;M[2,2]))</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+15 &amp; 12 &amp; 18 &amp; 6 \\
+18 &amp; 33 &amp; 9 &amp; 27 \\
+12 &amp; 4 &amp; 33 &amp; 18 \\
+6 &amp; 18 &amp; 27 &amp; 60 \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>substitute( Symbolics.jacobian(vec(X^3), vec(X)) , Dict(p=&gt;M[1,1],q=&gt;M[2,1],r=&gt;M[1,2],s=&gt;M[2,2])) * vec(E)</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{c}
+0.012899999999999998 \\
+0.0174 \\
+0.0161 \\
+0.0195 \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><h2>The Jacobian in Kronecker Notation</h2></div>
+
+<pre class='language-julia'><code class='language-julia'>expand.( kron(I2,X^2) + kron(X',X) + kron(X'^2,I2) )</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+3 p^{2} + 2 q r &amp; r s + 2 p r &amp; q s + 2 p q &amp; q r \\
+q s + 2 p q &amp; p^{2} + p s + s^{2} + 2 q r &amp; q^{2} &amp; p q + 2 q s \\
+r s + 2 p r &amp; r^{2} &amp; p^{2} + p s + s^{2} + 2 q r &amp; p r + 2 r s \\
+q r &amp; p r + 2 r s &amp; p q + 2 q s &amp; 3 s^{2} + 2 q r \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><h1>3) The LU Decomposition</h1><p>Recall the LU Decomposition factors a matrix into unit lower-trianguar and upper triangular:</p></div>
+
+<pre class='language-julia'><code class='language-julia'>begin
+    L,U = lu(X);
+    L,U
+end</code></pre>
+<pre class="code-output documenter-example-output" id="var-U">(Symbolics.Num[1 0; q / p 1], Symbolics.Num[p r; 0 s + (-q*r) / p])</pre>
+
+<pre class='language-julia'><code class='language-julia'>simplify_fractions.(L*U)</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cc}
+p &amp; r \\
+q &amp; s \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><p>The four entries of X: p,q,r,s are transformed into these four entries in LU:</p></div>
+
+<pre class='language-julia'><code class='language-julia'>[L[2,1],U[1,1],U[1,2],U[2,2]]</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{c}
+\frac{q}{p} \\
+p \\
+r \\
+s + \frac{ - q r}{p} \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>jac([L[2,1],U[1,1],U[1,2],U[2,2]], X)</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cccc}
+ - \frac{q}{p^{2}} &amp; \frac{1}{p} &amp; 0 &amp; 0 \\
+1 &amp; 0 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; 1 &amp; 0 \\
+ - \frac{ - q r}{p^{2}} &amp; \frac{ - r}{p} &amp; \frac{ - q}{p} &amp; 1 \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><p>Exercise: Relate this to d(LU) = dL U + L dU</p></div>
+
+
+<div class="markdown"><h1>4) Traceless symmetric eigenproblem: an example with two parameters not four</h1></div>
+
+<pre class='language-julia'><code class='language-julia'>S = [p s; s -p]</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cc}
+p &amp; s \\
+s &amp;  - p \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><p>We know that the eigenvalues add to 0 (from the trace) and the eigenvectors are orthogonal (from being symmetric), so we can represent the eigenvectors and eigenvalues:</p></div>
+
+<pre class='language-julia'><code class='language-julia'>Q = [cos(θ/2) -sin(θ/2); sin(θ/2) cos(θ/2)]  # Eigenvector matrix</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cc}
+\cos\left( \frac{1}{2} \theta \right) &amp;  - \sin\left( \frac{1}{2} \theta \right) \\
+\sin\left( \frac{1}{2} \theta \right) &amp; \cos\left( \frac{1}{2} \theta \right) \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>Λ = [r 0;0 -r] # Eigenvalue matrix</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cc}
+r &amp; 0 \\
+0 &amp;  - r \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>Q</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cc}
+\cos\left( \frac{1}{2} \theta \right) &amp;  - \sin\left( \frac{1}{2} \theta \right) \\
+\sin\left( \frac{1}{2} \theta \right) &amp; \cos\left( \frac{1}{2} \theta \right) \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>Λ</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cc}
+r &amp; 0 \\
+0 &amp;  - r \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+<pre class='language-julia'><code class='language-julia'>Symbolics.simplify.(Q * Λ * Q')</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cc}
+r \cos\left( \theta \right) &amp; r \sin\left( \theta \right) \\
+r \sin\left( \theta \right) &amp;  - r \cos\left( \theta \right) \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><p>The relationship between θ,r to p,s:</p></div>
+
+<pre class='language-julia'><code class='language-julia'>S, simplify.(Q*Λ*Q'), [r*cos(θ) r*sin(θ) ; r*sin(θ) -r*cos(θ)]</code></pre>
+<pre class="code-output documenter-example-output" id="var-hash720426">(Symbolics.Num[p s; s -p], Symbolics.Num[r*cos(θ) r*sin(θ); r*sin(θ) -r*cos(θ)], Symbolics.Num[r*cos(θ) r*sin(θ); r*sin(θ) -r*cos(θ)])</pre>
+
+<pre class='language-julia'><code class='language-julia'>simplify.(jac( (Q*Λ*Q')[1:2] ,  [r,θ]))</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{cc}
+\cos\left( \theta \right) &amp;  - r \sin\left( \theta \right) \\
+\sin\left( \theta \right) &amp; r \cos\left( \theta \right) \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><p>Interesting mathematical observation: these are the formulas you may remember from other classes that relate cartesian coordinates to polar coordinates in the plane.</p></div>
+
+<pre class='language-julia'><code class='language-julia'>jacobian_det = simplify(det(simplify.(jac( (Q*Λ*Q')[1:2] ,  [r,θ]))))</code></pre>
+<p class="tex">$$\begin{equation}
+r
+\end{equation}$$</p>
+
+
+<div class="markdown"><p>Mathematical aside det J=r , this is the change of variables from x,y to r,θ that you may have seen in 18.02.  This eigenvalue problem is the same as the cartesian coordinates to polar representations of the plane. Often written dx dy = r dr dθ</p></div>
+
+
+<div class="markdown"><h1>5) The full 2x2 symmetric eigenproblem</h1></div>
+
+<pre class='language-julia'><code class='language-julia'>@variables λ₁ λ₂</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{c}
+\lambda{_1} \\
+\lambda{_2} \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><p>We think of</p><p><span class="tex">$\left( \begin{array}{cc} p &amp; s \\ s &amp; r  \end{array} \right) = \left( \begin{array}{rr} \cos(\theta) &amp; -\sin(\theta) \\ \sin(\theta) &amp; \cos(\theta)  \end{array} \right) \left( \begin{array}{cc} \lambda_1 &amp; 0 \\ 0  &amp; \lambda_2  \end{array} \right)  \left( \begin{array}{rr} \cos(\theta) &amp; -\sin(\theta) \\ \sin(\theta) &amp; \cos(\theta)  \end{array} \right)^T$</span><br/> as the function from <br/><span class="tex">$\lambda_1,\lambda_2,θ  \rightarrow  p,r,s$</span></p></div>
+
+
+<div class="markdown"><p>S = QΛQ':</p></div>
+
+<pre class='language-julia'><code class='language-julia'>let 
+    Q = [cos(θ) -sin(θ); sin(θ) cos(θ)]
+    S = Q*[λ₁ 0;0 λ₂]*Q'
+    [p s;s r], S
+    J = jac([S[1,1],S[2,2],S[1,2]] , [λ₁,λ₂,θ])
+end</code></pre>
+<p class="tex">$$\begin{equation}
+\left[
+\begin{array}{ccc}
+\cos^{2}\left( \theta \right) &amp; \sin^{2}\left( \theta \right) &amp;  - 2 \lambda{_1} \cos\left( \theta \right) \sin\left( \theta \right) + 2 \lambda{_2} \cos\left( \theta \right) \sin\left( \theta \right) \\
+\sin^{2}\left( \theta \right) &amp; \cos^{2}\left( \theta \right) &amp; 2 \lambda{_1} \cos\left( \theta \right) \sin\left( \theta \right) - 2 \lambda{_2} \cos\left( \theta \right) \sin\left( \theta \right) \\
+\cos\left( \theta \right) \sin\left( \theta \right) &amp;  - \cos\left( \theta \right) \sin\left( \theta \right) &amp; \cos^{2}\left( \theta \right) \lambda{_1} + \sin^{2}\left( \theta \right) \lambda{_2} - \sin^{2}\left( \theta \right) \lambda{_1} - \cos^{2}\left( \theta \right) \lambda{_2} \\
+\end{array}
+\right]
+\end{equation}$$</p>
+
+
+<div class="markdown"><p>The determinant of this transformation simplifies to <span class="tex">$\lambda_1 - \lambda_2$</span> which some people interpret as a kind of repulsion between the two eigenvalues: that is there is a tendency for the two eigenvalues to not want to be too close together.  (If both are equal, when n=2, the matrix is <span class="tex">$\alpha I$</span>, one condition takes three parameters down to 1)</p></div>
+
+<!-- PlutoStaticHTML.End -->
